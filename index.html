@@ -1,0 +1,30 @@
+<html>
+<head>
+	<script type="text/javascript" src="render.js"></script>
+	<script type="text/javascript" src="floorplanner.js"></script>
+  <link rel="stylesheet" type="text/css" href="render.css">
+</head>
+
+<body style="zoom: 100%" onload="main()">
+
+	<div id="controls" style="width: auto; height: 80px;">
+		<div class="button" id="lay">Lay floor</div>
+<!--		<div class="button" id="shuffle">Shuffle</div> -->
+		<div class="button">width&nbsp;<input id="width"></input></div>
+		<div class="button">height&nbsp;<input id="height"></input></div>
+	</div>
+
+	<div id="render" style="zoom: 25%">
+	
+		<div id="floor" style="position: absolute; left: 100px; top: 320px; width: 3000px; height: 3000px; overflow: hidden"></div>
+		<div id="drag" style="position: absolute; left: 100px; top: 320px; width: 3100px; height: 3000px; overflow: hidden; border: 1px solid black; resize: both"></div>
+		<div id="marker" style="position: absolute; left: 0px; top: 0px; width: 100px; height: 100px; overflow: hidden; border: 1px solid black"></div>
+		
+		<div id="svg" style="position: relative; left: 100px; top: 100px; display: none">
+	</div>
+
+	</div>
+	
+</body>
+
+</html>
