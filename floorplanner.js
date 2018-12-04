@@ -3,6 +3,32 @@
 
 'use strict';
 
+function sprintf() {
+    var args = arguments,
+    string = args[0],
+    i = 1;
+    return string.replace(/%((%)|s|d)/g, function (m) {
+        // m is the matched format, e.g. %s, %d
+        var val = null;
+        if (m[2]) {
+            val = m[2];
+        } else {
+            val = args[i];
+            // A switch statement so that the formatter can be extended. Default is %s
+            switch (m) {
+                case '%d':
+                    val = parseFloat(val);
+                    if (isNaN(val)) {
+                        val = 0;
+                    }
+                    break;
+            }
+            i++;
+        }
+        return val;
+    });
+}
+
 var boardLength = 2028;
 var boardWidth = 192;
 
@@ -66,13 +92,26 @@ function getcutpos(piece, length) {
 }
 
 
+var _console = console;
+
 function fillFloor(roomWidth, roomLength) {
+
+  var buffer = [];
+
+  var console = {
+    log: function(msg) {
+      buffer.push(sprintf.apply(this, arguments));
+      _console.log.apply(this, arguments);
+    }
+  }
+
   console.log("fillFloor %d, %d", roomWidth, roomLength);
 
   var numRows = 1 + roomLength / boardWidth;
 
   var pos, row = 0;
 
+  var logs = [];
   var laidPieces = [];
   var splitPieces = [];
   var lostPieces = [];
@@ -86,6 +125,7 @@ function fillFloor(roomWidth, roomLength) {
 
     if(length % boardLength === 0) {
       //  [ |=======> ,  >===|  ]
+      console.log("new board cut, left joinable piece: " + (-pos));
       return [boardLength - pos, -pos]
     } else if(length > 0) {
       if(pos > length) {
@@ -109,6 +149,7 @@ function fillFloor(roomWidth, roomLength) {
   function layPiece(piece) {
     console.log("layPiece: " + piece);
     laidPieces[row].push(piece);
+    logs.push(buffer.join("\n"));
     pos += piece < 0 ? -piece : piece;
   }
 
@@ -128,11 +169,18 @@ function fillFloor(roomWidth, roomLength) {
     return length - cut;
   }
 
+  function lastPieceSize(firstPiece, roomWidth) {
+    return roomWidth - boardLength*((roomWidth - firstPiece )/boardLength|0) - firstPiece;
+  }
+
+  var lastPieces = [];
+
   while(row < numRows) {
     pos = 0;
 
+    buffer = [];
     console.log("----------------------------------------");
-    console.log("lay row: " + row);
+    console.log("lay row: " + row + ", pieces: " + splitPieces.join(","));
 
 
     laidPieces[row] = [];
@@ -163,6 +211,27 @@ function fillFloor(roomWidth, roomLength) {
 	    } else {
 	      cut = (align + 507) - patternPos;
 	    }
+
+	    /*
+	    if(cut < 500) {
+	      return false;
+	    }
+
+	    if(lastPieceSize(cut, roomWidth) < 500) {
+	      return false;
+	    }
+	    */
+
+	    /*
+	    while(cut < 500 || lastPieceSize(cut, roomWidth) < 500) {
+	      if(cut < 500) {
+		if(cut > lastPieceSize(cut, roomWidth)) {
+		  cut += 507;
+		}
+	      }
+ 	    }
+	    */
+
 	    if(p > cut) {
 	      return true;
 	    }
@@ -172,9 +241,19 @@ function fillFloor(roomWidth, roomLength) {
 
       } else {
 	var minLength = roomWidth - pos;
-	console.log("find piece with minLength: " + minLength);
+	console.log("Middle or last, find piece with minLength: " + minLength + " in sequece: " + splitPieces.join(","));
 	piece = splitPieces.filter( (p) => p < -minLength).sort( (a,b) => b - a)[0];
       }
+
+      // constraint, do not start with shorter pieces than 500mm
+      if(piece && piece < 500) {
+	piece = 0;
+      }
+
+      // test force length to fit
+      //if(row === 1 && pos === 0) {
+      //piece = 1500;
+      //}
 
       if(piece) {
 	splitPieces.splice(splitPieces.indexOf(piece), 1);
@@ -184,6 +263,25 @@ function fillFloor(roomWidth, roomLength) {
 	usedBoards++;
       }
 
+      if(pos == 0) {
+
+	//                                              |
+	// |------|---------------------|---------------|-----|
+
+	var tmpPiece = piece  ? piece : 2028;
+
+
+	var lastPiece = roomWidth - boardLength*((roomWidth - alignPiece(tmpPiece, align) )/boardLength|0) - alignPiece(tmpPiece, align);
+
+	lastPieces[row] = lastPiece;
+
+	if(lastPiece < 500) {
+
+	}
+
+      }
+
+
       var split;
 
       console.log("piece selected: %d, pos: %d, width: %d", piece, pos, roomWidth);
@@ -191,8 +289,8 @@ function fillFloor(roomWidth, roomLength) {
       if(pos === 0) {
 	// align piece
 	split = cutBoard(piece, getcutpos(piece, alignPiece(piece, align)));
-	console.log("piece split: ", split);
-	console.log("lay aligned piece: %d", split[0]);
+	//console.log("piece split: ", split);
+	//console.log("lay aligned piece: %d", split[0]);
 
 	if(split[0] > roomWidth) {
 	  console.log("split long piece: %d", split[0]);
@@ -231,10 +329,12 @@ function fillFloor(roomWidth, roomLength) {
 
   return {
     laid: laidPieces,
+    logs: logs,
     lost: lostPieces,
     split: splitPieces,
+    lastPieces: lastPieces,
     boards: usedBoards,
-    packs: usedBoards / 8,
+    packs: usedBoards / 6,
     area: usedBoards * 2.028 * 0.192
   };
 }

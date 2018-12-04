@@ -7,6 +7,7 @@ var $$ = function(sel, elem) {
   return document.querySelectorAll(sel, elem ? elem : document);
 }
 
+
 function addBoard(parent, x, y, split, color) {
 var board = document.createElement('board');
 board.innerHTML =
@@ -46,6 +47,8 @@ if(split < 0) {
 */
 
   parent.appendChild(board);
+
+  return board;
 }
 
 var test = false;
@@ -108,6 +111,11 @@ function renderEdges(edges) {
 
 function renderFloor(floor) {
 
+  var lastPieces = floor.lastPieces;
+  var laid = floor.laid;
+
+  console.log("lastPieces: ", lastPieces);
+
   if(test) {
     addBoard(document.getElementById('floor'),0,0,0);
     addBoard(document.getElementById('floor'),254,194,0);
@@ -126,12 +134,40 @@ function renderFloor(floor) {
 
     var color = true;
 
-    floor.map( (row,i) => {
+    index = 0;
+    laid.map( (row,i) => {
       //console.log("i: " + i);
       x = 0;
       row.map(p => {
 	//console.log("add piece: " + p);
-	addBoard(elem, x, y, p, color ? '#ff0' : '#cc0');
+	var b = addBoard(elem, x, y, p, color ? '#ff0' : '#cc0');
+
+	b.logs = floor.logs[index++];
+	console.log("added logs for ", index, ", length: " + b.logs.length);
+	b.addEventListener('click', (function(event) {
+	  console.log("logs, target: ");
+	  console.log(this.logs);
+	}).bind(b));
+
+	var se = document.createElement('div');
+	//se.style = "font-size: 72px";
+	se.className = 'size';
+	se.innerHTML = ""+ Math.abs(p);
+	//se.innerHTML = '' + Math.abs(p);
+	b.appendChild(se);
+
+	  // used when debugging calculated lastPiece size
+	/*
+	if( (x > 0 && Math.abs(p) !== 2028) || (x === 0) ) {
+	  var se = document.createElement('div');
+	  se.style = "font-size: 72px";
+	  se.className = 'size';
+	  se.innerHTML = 'L' + lastPieces[i] + '-R' + Math.abs(p);
+	  //se.innerHTML = '' + Math.abs(p);
+	  b.appendChild(se);
+	}*/
+
+
 	color = !color;
 	x += Math.abs(p);
       });
@@ -150,6 +186,8 @@ function renderFloor(floor) {
 
 var currWidth = 5254;
 var currHeight = 2986;
+
+var dragOffset = 0;
 
 function setElemSize(id, w, h) {
   //var drag = document.getElementById('drag');
@@ -171,19 +209,27 @@ function setFloorSize(width, height) {
   $('#width').value = ""+ width;
   $('#height').value = ""+ height;
 
-  setElemSize('drag', width+100, height);
+  setElemSize('drag', width+dragOffset, height);
   setElemSize('floor', width, height);
 
-  setElemPos($('#marker'), width, height);
+  //setElemPos($('#marker'), width, height);
 
   currWidth = width;
   currHeight = height;
 
   document.getElementById('floor').innerHTML ="";
   var floor = fillFloor(width, height);
-  renderFloor(floor.laid);
-  console.log("lost " + floor.lost.reduce( (a,v) => a+v, 0) );
+
+  var saved = floor.split.reduce( (a,v) => a+Math.abs(v), 0) ;
+  floor.roomArea = width * height / 1000000;
+  floor.efficiency = floor.roomArea  / (floor.boards * 2.028*0.192);
   console.log("usage: ", floor);
+
+  renderFloor(floor);
+  console.log("lost " + floor.lost.reduce( (a,v) => a+v, 0) );
+  console.log("num logs: ", floor.logs.length);
+
+  $('#stats').innerText = "room size: "  + (floor.roomArea*10|0)/10 + ", used area: " + (floor.area*10|0)/10 + ", boards: " + floor.boards + ", packs: " + (1+floor.packs|0) + ", efficiency: " + ((1000*floor.roomArea / (floor.boards * 2.028*0.192))|0)/10 + ", remain: " + ( (floor.packs+1 | 0) *6-floor.boards) + " boards, " + floor.split.length + " pieces " + ((saved*0.192/100)|0)/10 + " m2 (" + (saved|0) + " mm) split";
 }
 
 function main() {
@@ -192,12 +238,12 @@ function main() {
 
   setFloorSize(currWidth, currHeight);
 
-  //document.getElementById('drag').style.width = currWidth+100;
+  //document.getElementById('drag').style.width = currWidth+dragOffset;
   //document.getElementById('drag').style.height = currHeight;
-  //setElemSize('drag', currWidth+100, currHeight);
+  //setElemSize('drag', currWidth+dragOffset, currHeight);
   //setElemSize('floor', currWidth, currHeight);
 
-  //var floor = fillFloor(currWidth-100, currHeight);
+  //var floor = fillFloor(currWidth-dragOffset, currHeight);
   //renderFloor(floor.laid);
 
 
@@ -205,7 +251,7 @@ function main() {
   document.getElementById('lay').addEventListener('click', (e) => {
 
     console.log("click: ", e);
-    var width = document.getElementById('drag').getBoundingClientRect().width-100;
+    var width = document.getElementById('drag').getBoundingClientRect().width-dragOffset;
     var height = document.getElementById('drag').getBoundingClientRect().height;
 
     setFloorSize(width, height);

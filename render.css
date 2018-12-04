@@ -13,6 +13,23 @@ div.button input {
     width: 80px;
 }
 
+.stats {
+    display: inline-block;
+    height: 28px;
+    padding: 8px;
+    font-family: sans-serif;
+    font-size: 18px;
+    background-color: #eee;
+    width: auto;
+}
+
+.size {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    font-size: 72px;
+}
+
 board {
   overflow: hidden;
   height: 192px;
