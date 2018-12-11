@@ -18,9 +18,18 @@ div.button input {
     height: 28px;
     padding: 8px;
     font-family: sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     background-color: #eee;
     width: auto;
+}
+
+.status {
+    position: absolute;
+    height: auto;
+    width: 320px;
+    font-family: sans-serif;
+    font-size: 16px;
+    background-color: #eee;
 }
 
 .size {

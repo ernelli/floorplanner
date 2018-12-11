@@ -114,6 +114,8 @@ function renderFloor(floor) {
   var lastPieces = floor.lastPieces;
   var laid = floor.laid;
 
+  var swapPiece = false;
+  
   console.log("lastPieces: ", lastPieces);
 
   if(test) {
@@ -142,11 +144,40 @@ function renderFloor(floor) {
 	//console.log("add piece: " + p);
 	var b = addBoard(elem, x, y, p, color ? '#ff0' : '#cc0');
 
+	b.rowIndex = i;
+
 	b.logs = floor.logs[index++];
-	console.log("added logs for ", index, ", length: " + b.logs.length);
-	b.addEventListener('click', (function(event) {
-	  console.log("logs, target: ");
-	  console.log(this.logs);
+	//console.log("added logs for ", index, ", length: " + b.logs.length);
+
+	b.addEventListener('click', (function(e) {
+
+	   if (e.ctrlKey) {
+	     if(swapPiece) {
+	       console.log("swap rows: ", swapPiece.rowIndex, this.rowIndex);
+
+	       var tmp = floor.laid[swapPiece.rowIndex];
+	       floor.laid[swapPiece.rowIndex] = floor.laid[this.rowIndex];
+	       floor.laid[this.rowIndex] = tmp;
+
+	       swapPiece.style.backgroundColor = swapPiece.oldColor;
+	       swapPiece = false;
+
+	       document.getElementById('floor').innerHTML ="";
+	       renderFloor(floor);
+	     } else {
+	       console.log("set opacity");
+	       swapPiece = this;
+	       this.oldColor = this.style.backgroundColor;
+	       this.style.backgroundColor = "#fed";
+	     }
+
+
+
+	   } else {
+	     console.log("logs, target: ");
+	     console.log(this.logs);
+	   }
+
 	}).bind(b));
 
 	var se = document.createElement('div');
@@ -177,7 +208,7 @@ function renderFloor(floor) {
   }
 
   if(edges) {
-    //renderEdges(edges)
+    renderEdges(edges)
   }
 }
 
@@ -185,16 +216,17 @@ function renderFloor(floor) {
 //var currHeight = 2678;
 
 var currWidth = 5254;
-var currHeight = 2986;
+var currHeight = 2990;
 
 var dragOffset = 0;
 
 function setElemSize(id, w, h) {
   //var drag = document.getElementById('drag');
   var elem = document.getElementById(id);
-
-  elem.style.width = w + "px";
-  elem.style.height = h + "px";
+  if(elem) {
+    elem.style.width = w + "px";
+    elem.style.height = h + "px";
+  }
 }
 
 function setElemPos(elem, x, y) {
@@ -210,7 +242,7 @@ function setFloorSize(width, height) {
   $('#height').value = ""+ height;
 
   setElemSize('drag', width+dragOffset, height);
-  setElemSize('floor', width, height);
+  setElemSize('floor', width, height+400);
 
   //setElemPos($('#marker'), width, height);
 
@@ -221,6 +253,12 @@ function setFloorSize(width, height) {
   var floor = fillFloor(width, height);
 
   var saved = floor.split.reduce( (a,v) => a+Math.abs(v), 0) ;
+  var lost  = floor.lost.reduce( (a,v) => a+Math.abs(v), 0) ;
+
+  var used = floor.laid.map(r => r.reduce( (a,v) => a+Math.abs(v), 0)).reduce( (a,v) => a+Math.abs(v), 0) ;
+
+  console.log("Avstämning: saved %d + lost: %s + used: %d = ", saved, lost, used, saved+lost+used);
+
   floor.roomArea = width * height / 1000000;
   floor.efficiency = floor.roomArea  / (floor.boards * 2.028*0.192);
   console.log("usage: ", floor);
@@ -229,12 +267,15 @@ function setFloorSize(width, height) {
   console.log("lost " + floor.lost.reduce( (a,v) => a+v, 0) );
   console.log("num logs: ", floor.logs.length);
 
-  $('#stats').innerText = "room size: "  + (floor.roomArea*10|0)/10 + ", used area: " + (floor.area*10|0)/10 + ", boards: " + floor.boards + ", packs: " + (1+floor.packs|0) + ", efficiency: " + ((1000*floor.roomArea / (floor.boards * 2.028*0.192))|0)/10 + ", remain: " + ( (floor.packs+1 | 0) *6-floor.boards) + " boards, " + floor.split.length + " pieces " + ((saved*0.192/100)|0)/10 + " m2 (" + (saved|0) + " mm) split";
+  $('#stats').innerText = "room size: "  + (floor.roomArea*10|0)/10 + ", used area: " + (floor.area*10|0)/10 + ", boards: " + floor.boards + ", packs: " + (1+floor.packs|0) + ", efficiency: " + ((1000*floor.roomArea / (floor.boards * 2.028*0.192))|0)/10 + "\nremain: " + ( (floor.packs+1 | 0) *6-floor.boards) + " boards, "
+    + floor.split.length + " pieces " + ((saved*0.192/100)|0)/10 + " m2 (" + (saved|0) + " mm) split, "
+  + floor.lost.length + " pieces " + ((lost*0.192/100)|0)/10 + " m2 (" + (lost|0) + " mm) lost";
 }
 
 function main() {
   //var floor = fillFloor(2546, 2578);
 
+  // 2992, 2985, 2991
 
   setFloorSize(currWidth, currHeight);
 

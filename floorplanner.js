@@ -107,13 +107,13 @@ function fillFloor(roomWidth, roomLength) {
 
   console.log("fillFloor %d, %d", roomWidth, roomLength);
 
-  var numRows = 1 + roomLength / boardWidth;
+  var numRows = (1 + roomLength / boardWidth) | 0;
 
   var pos, row = 0;
 
   var logs = [];
   var laidPieces = [];
-  var splitPieces = [];
+  var splitPieces = [ 1580, 1580];
   var lostPieces = [];
 
   var usedBoards = 0;
@@ -122,6 +122,7 @@ function fillFloor(roomWidth, roomLength) {
   var odd = 254;  //202 + (305-202) / 2;
 
   function cutBoard(length, pos) {
+    var lost;
 
     if(length % boardLength === 0) {
       //  [ |=======> ,  >===|  ]
@@ -132,7 +133,10 @@ function fillFloor(roomWidth, roomLength) {
 	throw ("Invalid cutBoard operation, board length: " + length + ", cutPos: " + pos);
       }
 
-      lostPieces.push( pos );
+      lost = pos;
+
+      lostPieces.push( lost - 3  );
+      lostPieces.push( 3  );
 
       return [length - pos];
     } else {
@@ -140,7 +144,9 @@ function fillFloor(roomWidth, roomLength) {
 	throw ("Invalid cutBoard operation, board length: " + length + ", cutPos: " + pos);
       }
 
-      lostPieces.push(-length - pos);
+      lost = -length - pos;
+      lostPieces.push( lost - 3);
+      lostPieces.push( 3);
 
       return [pos];
     }
@@ -202,6 +208,9 @@ function fillFloor(roomWidth, roomLength) {
 
       if(pos === 0) {
 	// align pattern with row
+
+	console.log("first piece, find usable piece in stash: " + splitPieces.join(","));
+
 	piece = splitPieces.filter( p => {
 	  if(p > 0) {
 	    var cut = 0;
@@ -237,7 +246,9 @@ function fillFloor(roomWidth, roomLength) {
 	    }
 	  }
 	  return false;
-	})[0];
+	}).reduce( (a,p) => p > a ? p : a, 0); 
+
+	console.log("Piece found: " + piece);
 
       } else {
 	var minLength = roomWidth - pos;
@@ -281,7 +292,6 @@ function fillFloor(roomWidth, roomLength) {
 
       }
 
-
       var split;
 
       console.log("piece selected: %d, pos: %d, width: %d", piece, pos, roomWidth);
@@ -313,7 +323,8 @@ function fillFloor(roomWidth, roomLength) {
 
 	if(split[1]) { // full board, cut
 	  layPiece(split[1]);
-	  splitPieces.push(split[0]);
+	  lostPieces.push(3);
+	  splitPieces.push(split[0] - 3);
 	} else {
 	  layPiece(split[0]);
 	}
